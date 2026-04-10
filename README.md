@@ -21,6 +21,7 @@ Sistemul este un ceas inteligent (smartwatch) cu consum ultra-redus de energie, 
 
 ## 2. Diagrama bloc
 
+```mermaid
 graph TD
     %% -- Nodul Central (Microcontroller) --
     subgraph MCU_Block [Nucleu Central]
@@ -96,6 +97,7 @@ graph TD
     linkStyle 9,10,11,12 stroke:#0000ff,stroke-width:2px; %% I2C (Albastru)
     linkStyle 13,14,15,16,17 stroke:#00aa00,stroke-width:2px; %% SPI/EPD (Verde)
     linkStyle 18,19,20,21,22 stroke:#555,stroke-width:1px,stroke-dasharray: 5 5; %% Control/GPIO/RF
+```
 
 ## 3. Configurarea Pinilor nRF52840 (Pinout Mapping)
 
