@@ -24,79 +24,51 @@ Sistemul este un ceas inteligent (smartwatch) cu consum ultra-redus de energie, 
 ```mermaid
 graph TD
     %% -- Nodul Central (Microcontroller) --
-    subgraph MCU_Block [Nucleu Central]
-        nRF52840[<b>nRF52840 SoC</b><br/>ARM Cortex-M4F<br/>Bluetooth 5 / RF]
+    subgraph MCU_Block ["Nucleu Central"]
+        nRF52840["nRF52840 SoC (Bluetooth 5 / RF)"]
     end
 
     %% -- Modulul Power Management --
-    subgraph Power_Block [Management Alimentare]
-        LiPo_Batt((Baterie LiPo<br/>3.7V))
-        USBC_Conn[Conector USB-C<br/>(Alimentare/Date)]
-        Charger_BQ[<b>BQ25180 Charger IC</b><br/>(Gestionare Încărcare)]
-        Fuel_MAX[<b>MAX17048 Fuel Gauge</b><br/>(Monitorizare Baterie)]
-        Reg_RT[<b>RT6160 Buck-Boost</b><br/>(Regulator 3.3V Stabil)]
+    subgraph Power_Block ["Management Alimentare"]
+        LiPo_Batt(("Baterie LiPo 3.7V"))
+        USBC_Conn["Conector USB-C (Alimentare/Date)"]
+        Charger_BQ["BQ25180 Charger IC"]
+        Fuel_MAX["MAX17048 Fuel Gauge"]
+        Reg_RT["RT6160 Buck-Boost Regulator"]
     end
 
     %% -- Modulul Afișaj --
-    subgraph Display_Block [Interfață Vizuală]
-        FPC_Conn[Conector FPC 24p]
-        EPD_Driver[<b>Circuit Comandă E-Paper</b><br/>(Boost Converter ±15V/L5/Diodes)]
-        EPD_Screen[<b>Ecran E-Paper (E-Ink)</b>]
+    subgraph Display_Block ["Interfață Vizuală"]
+        FPC_Conn["Conector FPC 24p"]
+        EPD_Driver["Circuit Comandă E-Paper"]
+        EPD_Screen["Ecran E-Paper (E-Ink)"]
     end
 
     %% -- Modulul Senzori & Feedback --
-    subgraph Sensor_Feedback_Block [Senzori și Actuatori]
-        IMU_BMA[<b>BMA423 Accelerometru</b><br/>(Pedometru/Gesturi)]
-        Haptic_DRV[<b>DRV2605 Haptic Driver</b>]
-        Haptic_Mot((Motor Vibrații<br/>ERM/LRA))
+    subgraph Sensor_Feedback_Block ["Senzori și Actuatori"]
+        IMU_BMA["BMA423 Accelerometru"]
+        Haptic_DRV["DRV2605 Haptic Driver"]
+        Haptic_Mot(("Motor Vibrații"))
     end
 
-    %% -- Modulul User Interface & Debug --
-    subgraph UI_Debug_Block [Interfață Utilizator & Programare]
-        Buttons{Butoane Navigare<br/>(UP, ENT, DN)}
-        ANT_Chip[Antenă Chip 2.4GHz]
-        Tag_Conn[Conector TC2030<br/>(SWD Programare)]
-    end
+    %% -- Linii de Alimentare --
+    USBC_Conn ==> Charger_BQ
+    LiPo_Batt <==> Charger_BQ
+    LiPo_Batt -.-> Fuel_MAX
+    Charger_BQ ==> Reg_RT
+    Reg_RT ==> nRF52840
+    Reg_RT ==> IMU_BMA
+    Reg_RT ==> FPC_Conn
+    Reg_RT ==> Haptic_DRV
 
-    %% -- Linii de Alimentare (Power Lines) --
-    USBC_Conn ==>|VBUS (+5V)| Charger_BQ
-    LiPo_Batt <==>|VBAT (+3.7V typ)| Charger_BQ
-    LiPo_Batt -.->|VBAT Sense| Fuel_MAX
-    Charger_BQ ==>|VSYS| Reg_RT
-    Reg_RT ==>|VREG (+3.3V)| nRF52840
-    Reg_RT ==>|VREG (+3.3V)| IMU_BMA
-    Reg_RT ==>|VREG (+3.3V)| FPC_Conn
-    Reg_RT ==>|VREG (+3.3V)| Haptic_DRV
-
-    %% -- Linii de Comunicație & Control (Data Lines) --
-    
-    %% Magistrala I2C (Sensors/Power)
-    nRF52840 <-->|<b>I2C</b> (SDA/SCL)| Charger_BQ
-    nRF52840 <-->|<b>I2C</b> (SDA/SCL)| Fuel_MAX
-    nRF52840 <-->|<b>I2C</b> (SDA/SCL)| IMU_BMA
-    nRF52840 <-->|<b>I2C</b> (SDA/SCL)| Haptic_DRV
-
-    %% Magistrala SPI (Display)
-    nRF52840 -->|<b>SPI</b> (SCK/MOSI/CS)| FPC_Conn
-    nRF52840 -->|EPD Control (DC/RES)| FPC_Conn
-    nRF52840 <--|EPD Status (BUSY)| FPC_Conn
-    FPC_Conn <-->|Semnale Ecran| EPD_Driver
-    EPD_Driver ==>|Tensiuni Înalte/Date| EPD_Screen
-
-    %% Control Direct & Întreruperi
-    nRF52840 <--|INT (Întrerupere Wake-up)| IMU_BMA
-    nRF52840 -->|Trigger (Activare)| Haptic_DRV
-    Haptic_DRV ==>|Semnal Comandă| Haptic_Mot
-    Buttons -.->|Intrări Digitale (GPIO)| nRF52840
-    USBC_Conn <-->|USB Data (D+/D-)| nRF52840
-    Tag_Conn <-->|SWD (Prog/Debug)| nRF52840
-    nRF52840 <-->|RF Out| ANT_Chip
-
-    %% Legendă Stiluri
-    linkStyle 0,1,2,3,4,5,6,7,8 stroke:#ff0000,stroke-width:2px; %% Linii Alimentare (Rosu)
-    linkStyle 9,10,11,12 stroke:#0000ff,stroke-width:2px; %% I2C (Albastru)
-    linkStyle 13,14,15,16,17 stroke:#00aa00,stroke-width:2px; %% SPI/EPD (Verde)
-    linkStyle 18,19,20,21,22 stroke:#555,stroke-width:1px,stroke-dasharray: 5 5; %% Control/GPIO/RF
+    %% -- Linii de Date --
+    nRF52840 <-->|I2C| Charger_BQ
+    nRF52840 <-->|I2C| Fuel_MAX
+    nRF52840 <-->|I2C| IMU_BMA
+    nRF52840 <-->|I2C| Haptic_DRV
+    nRF52840 -->|SPI| FPC_Conn
+    FPC_Conn <--> EPD_Driver
+    EPD_Driver ==> EPD_Screen
 ```
 
 ## 3. Configurarea Pinilor nRF52840 (Pinout Mapping)
